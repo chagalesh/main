@@ -17,9 +17,45 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* انیمیشن لرزش برای رمز اشتباه */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .shake-animation { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
+
+    <!-- ================= LOGIN OVERLAY ================= -->
+    <div id="loginOverlay" class="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md text-center border-t-4 border-blue-600">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">ورود به داشبورد مدیریتی</h2>
+            <p class="text-gray-500 text-sm mb-6">شرکت مهندسین مشاور چگالش</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <input type="password" id="passwordInput" placeholder="رمز عبور را وارد کنید..." 
+                           class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition text-center text-lg tracking-widest"
+                           onkeypress="if(event.key === 'Enter') checkPassword()">
+                </div>
+                <p id="errorMsg" class="text-red-500 text-sm hidden font-medium">رمز عبور اشتباه است. لطفاً مجدداً تلاش کنید.</p>
+                
+                <button onclick="checkPassword()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2">
+                    <span>ورود به سیستم</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 mt-6">این سیستم تحت نظارت شرکت مهندسین مشاور چگالش می‌باشد.</p>
+        </div>
+    </div>
+    <!-- ================= END LOGIN OVERLAY ================= -->
+
 
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar (منوی کناری) -->
@@ -152,7 +188,7 @@
 
             </div>
 
-            <!-- Quick Notes Section (Optional but useful) -->
+            <!-- Quick Notes Section -->
             <div class="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-6">
                 <h3 class="text-blue-900 font-bold mb-2 flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -166,5 +202,55 @@
         </main>
     </div>
 
+    <!-- ================= JAVASCRIPT FOR PASSWORD ================= -->
+    <script>
+        // 🔑 رمز عبور را در خط زیر تغییر دهید
+        const CORRECT_PASSWORD = "Chagalesh1400"; 
+
+        const loginOverlay = document.getElementById('loginOverlay');
+        const passwordInput = document.getElementById('passwordInput');
+        const errorMsg = document.getElementById('errorMsg');
+
+        // بررسی اینکه آیا کاربر قبلاً در این نشست (Session) وارد شده است یا خیر
+        if (sessionStorage.getItem('dashboardAuthenticated') === 'true') {
+            loginOverlay.style.display = 'none';
+        }
+
+        function checkPassword() {
+            const enteredPassword = passwordInput.value;
+
+            if (enteredPassword === CORRECT_PASSWORD) {
+                // رمز صحیح است: ذخیره وضعیت و مخفی کردن لایه ورود
+                sessionStorage.setItem('dashboardAuthenticated', 'true');
+                loginOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    loginOverlay.style.display = 'none';
+                }, 300); // تاخیر کوتاه برای انیمیشن محو شدن
+            } else {
+                // رمز اشتباه است: نمایش خطا و لرزش باکس
+                errorMsg.classList.remove('hidden');
+                passwordInput.classList.add('border-red-500', 'bg-red-50');
+                
+                // اضافه کردن انیمیشن لرزش
+                const loginBox = loginOverlay.querySelector('div');
+                loginBox.classList.add('shake-animation');
+                
+                // حذف انیمیشن بعد از اجرا تا در صورت اشتباه بعدی دوباره کار کند
+                setTimeout(() => {
+                    loginBox.classList.remove('shake-animation');
+                }, 500);
+
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        // فوکوس خودکار روی اینپوت هنگام لود صفحه
+        window.onload = function() {
+            if (loginOverlay.style.display !== 'none') {
+                passwordInput.focus();
+            }
+        };
+    </script>
 </body>
 </html>

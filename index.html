@@ -219,7 +219,7 @@
         function checkPassword() {
             const enteredPassword = passwordInput.value;
 
-            if (enteredPassword === CORRECT_PASSWORD) {
+            if (enteredPassword.toLowerCase() === CORRECT_PASSWORD.toLowerCase()) {
                 // رمز صحیح است: ذخیره وضعیت و مخفی کردن لایه ورود
                 sessionStorage.setItem('dashboardAuthenticated', 'true');
                 loginOverlay.style.opacity = '0';

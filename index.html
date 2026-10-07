@@ -3,50 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>داشبورد مدیریتی</title>
+    <title>داشبورد مدیریت پروژه | چگالش</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Vazirmatn Font -->
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     
     <style> 
         body { font-family: 'Vazirmatn', sans-serif; } 
+        /* اسکرول بار زیبا و باریک */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50 text-gray-800">
 
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar (منوی کناری) -->
-        <aside class="w-64 bg-blue-900 text-white p-5 hidden md:block">
-            <h2 class="text-2xl font-bold mb-8 text-center">داشبورد مدیریت</h2>
-            <nav>
-                <ul class="space-y-4">
-                    <li><a href="#" class="block p-3 bg-blue-800 rounded-lg transition">صفحه اصلی</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">تصاویر پروژه</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">درصد پیشرفت</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">نمودارها</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">نیروی انسانی</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">ماشین آلات</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">موانع و مشکلات</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">گزارش ایمنی</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">وضعیت مالی</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">راه اندازی</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">راه اندازی</a></li>
-                    <li><a href="#" class="block p-3 hover:bg-blue-800 rounded-lg transition">ارتباطات</a></li>
+        <aside class="w-64 bg-slate-900 text-gray-300 p-5 hidden md:flex flex-col shadow-xl">
+            <div class="flex items-center gap-3 mb-10 px-2">
+                <h2 class="text-lg font-bold text-white leading-tight">داشبورد مدیریتی</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto">
+                <ul class="space-y-2">
+                    <li><a href="#" class="flex items-center gap-3 p-3 bg-blue-600 text-white rounded-lg transition shadow-md"><span>📊</span> صفحه اصلی</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>📷</span> تصاویر پروژه</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>📈</span> درصد پیشرفت</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>📉</span> نمودارها</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>👷</span> نیروی انسانی</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>🚜</span> ماشین آلات</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>⚠️</span> موانع و مشکلات</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>🛡️</span> گزارش ایمنی (HSE)</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>💰</span> وضعیت مالی</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>🔧</span> پیش‌راه‌اندازی</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>🚀</span> راه اندازی</a></li>
+                    <li><a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition"><span>📞</span> ارتباطات</a></li>
                 </ul>
             </nav>
+            <div class="mt-auto pt-4 border-t border-slate-700 text-xs text-center text-gray-500">
+                نسخه ۱.۰.۰ | توسعه توسط بهزاد موسوی
+            </div>
         </aside>
 
         <!-- Main Content (محتوای اصلی) -->
         <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-            <!-- Header -->
-            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">شرکت مهندسین مشاور چگالش</h1>
+            
+            <!-- Header Section -->
+            <header class="mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-slate-900">شرکت مهندسین مشاور چگالش</h1>
+                    </div>
+                    <div class="flex gap-3">
+                    </div>
                 </div>
-    </script>
+
+                <!-- Project Title & Location Banner -->
+                <div class="bg-gradient-to-l from-blue-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg mb-8">
+                    <h2 class="text-xl md:text-2xl font-bold mb-4 leading-relaxed">پروژه: احداث واحدهای تسویه نفت‌های سنگین، CCR، کاهش بنزن و اتان‌ زدایی</h2>
+                    <div class="flex flex-wrap gap-4 text-sm md:text-base text-blue-100">
+                        <div class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm">
+                            <span>📍</span>
+                            <span>محل پروژه: پالایشگاه شهید تندگویان تهران</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm">
+                            <span>📑</span>
+                            <span>شماره قرارداد: <span class="font-mono font-bold text-white">008-51-99</span></span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Project Specifications Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Card 1: اطلاعات زمانی -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-5 border-b border-gray-100 pb-3">
+                        <div class="p-2 bg-indigo-50 rounded-lg">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">بازه زمانی پروژه</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-sm">تاریخ شروع:</span>
+                            <span class="font-semibold text-gray-800">1400/01/14</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-sm">تاریخ پایان اولیه:</span>
+                            <span class="font-semibold text-gray-800">1403/01/14</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-sm">پایان تمدید شده:</span>
+                            <span class="text-amber-600 text-sm italic bg-amber-50 px-2 py-1 rounded">در انتظار تکمیل</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: اطلاعات مالی -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-5 border-b border-gray-100 pb-3">
+                        <div class="p-2 bg-emerald-50 rounded-lg">
+                            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">اطلاعات مالی قرارداد</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-sm">مبلغ اولیه پروژه:</span>
+                            <span class="text-gray-400 text-sm italic">در انتظار تکمیل</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-sm">جمع مبالغ اضافه شده:</span>
+                            <span class="text-gray-400 text-sm italic">در انتظار تکمیل</span>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700 font-medium text-sm">مبلغ فعلی قرارداد:</span>
+                                <span class="text-gray-400 font-bold text-lg">--- ریال</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: طرفین پروژه -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-5 border-b border-gray-100 pb-3">
+                        <div class="p-2 bg-rose-50 rounded-lg">
+                            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">طرفین پروژه</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-gray-500 text-sm">نام کارفرما:</span>
+                            <span class="text-gray-400 text-sm italic bg-gray-50 p-2 rounded border border-gray-100">در انتظار تکمیل</span>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-gray-500 text-sm">مشاور پروژه:</span>
+                            <span class="text-gray-400 text-sm italic bg-gray-50 p-2 rounded border border-gray-100">در انتظار تکمیل</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Quick Notes Section (Optional but useful) -->
+            <div class="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-6">
+                <h3 class="text-blue-900 font-bold mb-2 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    یادداشت مدیریتی
+                </h3>
+                <p class="text-blue-800 text-sm leading-relaxed">
+                    لطفاً فیلدهای خالی (تاریخ پایان تمدید شده، مبالغ و نام کارفرما/مشاور) را از طریق دکمه "ویرایش اطلاعات" در بالای صفحه تکمیل نمایید تا گزارش‌های مالی و زمانی به درستی محاسبه شوند.
+                </p>
+            </div>
+
+        </main>
+    </div>
+
 </body>
 </html>

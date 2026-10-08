@@ -186,7 +186,7 @@ tailwind.config = { theme: { extend: {
       </article>
     </section>
 
-    <p class="text-xs text-slate-400 text-center pt-2">مقادیر «—» پس از ثبت اطلاعات در این بخش نمایش داده می‌شوند.</p>
+    <p id="dataStatus" class="text-xs text-slate-400 text-center pt-2">در حال بارگذاری اطلاعات از فایل اکسل…</p>
   </div>
 </main>
 
@@ -252,6 +252,92 @@ tailwind.config = { theme: { extend: {
   }
   btn.addEventListener('click', () => toggle(sb.classList.contains('translate-x-full')));
   ov.addEventListener('click', () => toggle(false));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // ====== تنظیمات ======
+  const EXCEL_URL = 'https://chagalesh.github.io/main/dashboard.xlsx';
+
+  // عنوان‌ها دقیقاً همان متنی است که باید در فایل اکسل (ستون عنوان) نوشته شود
+  const LABELS = {
+    plan: 'پیشرفت برنامه‌ای', actual: 'پیشرفت واقعی', dev: 'انحراف از برنامه',
+    staff: 'تعداد کل پرسنل', eng: 'نیروی مهندسی', exe: 'نیروی اجرایی',
+    mach: 'تعداد کل ماشین‌آلات', light: 'ماشین‌آلات سبک', heavy: 'ماشین‌آلات سنگین'
+  };
+  const PERCENT_KEYS = ['plan', 'actual', 'dev'];
+  // ======================
+
+  const norm = s => String(s).replace(/[\s\u200c:：]/g, '').replace(/ي/g, 'ی').replace(/ك/g, 'ک');
+  const toEn = s => String(s).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const byNorm = {};
+  Object.entries(LABELS).forEach(([k, v]) => byNorm[norm(v)] = k);
+
+  function cellNumber(cell, isPercent) {
+    let n = typeof cell.v === 'number' ? cell.v : parseFloat(toEn(cell.w ?? cell.v).replace(/[,٬%٪\s]/g, ''));
+    if (isNaN(n)) return null;
+    if (isPercent && typeof cell.v === 'number' && (/%/.test(cell.w || '') || (Math.abs(n) <= 1 && !Number.isInteger(n)))) n *= 100;
+    return n;
+  }
+
+  function readWorkbook(wb) {
+    const found = {};
+    wb.SheetNames.forEach(name => {
+      const ws = wb.Sheets[name];
+      if (!ws['!ref']) return;
+      const r = XLSX.utils.decode_range(ws['!ref']);
+      for (let row = r.s.r; row <= r.e.r; row++) {
+        for (let col = r.s.c; col <= r.e.c; col++) {
+          const c = ws[XLSX.utils.encode_cell({ r: row, c: col })];
+          if (!c || typeof c.v !== 'string') continue;
+          const key = byNorm[norm(c.v)];
+          if (!key || key in found) continue;
+          // مقدار: اولین سلول پر در سمت راست؛ اگر نبود، سمت چپ
+          let val = null;
+          for (let k = col + 1; k <= r.e.c && !val; k++) { const x = ws[XLSX.utils.encode_cell({ r: row, c: k })]; if (x && x.v !== '') val = x; }
+          for (let k = col - 1; k >= r.s.c && !val; k--) { const x = ws[XLSX.utils.encode_cell({ r: row, c: k })]; if (x && x.v !== '') val = x; }
+          if (val) { const n = cellNumber(val, PERCENT_KEYS.includes(key)); if (n !== null) found[key] = n; }
+        }
+      }
+    });
+    // محاسبه خودکار مقادیر ثبت‌نشده
+    if (!('dev' in found) && 'plan' in found && 'actual' in found) found.dev = found.actual - found.plan;
+    if (!('staff' in found) && 'eng' in found && 'exe' in found) found.staff = found.eng + found.exe;
+    if (!('mach' in found) && 'light' in found && 'heavy' in found) found.mach = found.light + found.heavy;
+    return found;
+  }
+
+  function render(data) {
+    document.querySelectorAll('.lbl').forEach(lbl => {
+      const key = byNorm[norm(lbl.textContent)];
+      if (!key || !(key in data)) return;
+      const out = lbl.nextElementSibling;
+      if (!out) return;
+      const n = data[key];
+      const isP = PERCENT_KEYS.includes(key);
+      out.textContent = isP ? (Math.round(n * 10) / 10) + '%' : n.toLocaleString('en-US');
+      out.dir = 'ltr';
+      out.classList.remove('na', 'text-slate-300');
+      out.classList.add(out.classList.contains('text-2xl') ? 'text-ink' : 'val');
+      // نوار پیشرفت
+      const bar = lbl.parentElement.nextElementSibling;
+      if (isP && key !== 'dev' && bar && bar.classList.contains('h-2')) {
+        bar.firstElementChild.style.width = Math.max(0, Math.min(100, n)) + '%';
+      }
+    });
+  }
+
+  const statusEl = document.getElementById('dataStatus');
+  fetch(EXCEL_URL + '?t=' + Date.now())
+    .then(res => { if (!res.ok) throw new Error(res.status); return res.arrayBuffer(); })
+    .then(buf => {
+      const data = readWorkbook(XLSX.read(buf, { type: 'array' }));
+      render(data);
+      const missing = Object.keys(LABELS).filter(k => !(k in data));
+      statusEl.textContent = missing.length
+        ? 'اطلاعات بارگذاری شد؛ این عنوان‌ها در اکسل پیدا نشد: ' + missing.map(k => LABELS[k]).join('، ')
+        : 'اطلاعات از فایل اکسل به‌روز شد.';
+    })
+    .catch(() => { statusEl.textContent = 'بارگذاری فایل اکسل ناموفق بود. اتصال اینترنت و آدرس فایل را بررسی کنید.'; });
 </script>
 </body>
 </html>

@@ -21,24 +21,8 @@ tailwind.config = { theme: { extend: {
   .nav-link.active { @apply bg-amber-500 text-ink font-bold; }
   .nav-group { @apply text-xs text-slate-500 px-3 pt-4 pb-1; }
 </style>
-<style>body.locked > *:not(#lock) { display: none !important; }</style>
 </head>
-<body class="locked bg-paper font-sans text-slate-800 antialiased">
-
-<!-- Login gate -->
-<div id="lock" class="fixed inset-0 z-[100] bg-ink flex items-center justify-center p-4">
-  <div class="w-full max-w-sm bg-white rounded-2xl p-8 border-t-4 border-amber-500">
-    <img src="https://chagalesh.github.io/main/chagalesh.png" alt="لوگوی شرکت چگالش" class="h-16 w-auto object-contain mx-auto mb-5">
-    <h1 class="text-lg font-bold text-ink text-center">ورود به داشبورد مدیریتی</h1>
-    <p class="text-sm text-slate-500 text-center mt-1 mb-6">برای مشاهده اطلاعات، رمز عبور را وارد کنید.</p>
-    <form id="lockForm" autocomplete="off">
-      <label for="pw" class="block text-sm text-slate-600 mb-1.5">رمز عبور</label>
-      <input id="pw" type="password" dir="ltr" required autofocus class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-2 focus:outline-amber-500">
-      <p id="pwErr" class="hidden text-sm text-red-600 mt-2" role="alert">رمز عبور اشتباه است. دوباره تلاش کنید.</p>
-      <button type="submit" class="w-full mt-5 bg-ink hover:bg-steel text-white rounded-lg py-2.5 text-sm font-bold transition-colors">ورود</button>
-    </form>
-  </div>
-</div>
+<body class="bg-paper font-sans text-slate-800 antialiased">
 
 <!-- Mobile top bar -->
 <header class="lg:hidden sticky top-0 z-30 bg-ink text-white flex items-center justify-between px-4 h-14">
@@ -56,7 +40,7 @@ tailwind.config = { theme: { extend: {
     <h1 class="text-lg font-bold">داشبورد مدیریت</h1>
   </div>
   <nav class="flex-1 overflow-y-auto px-3 pb-4" aria-label="منوی اصلی">
-    <a href="#" class="nav-link"><span>📊</span>صفحه اصلی</a>
+    <a href="https://chagalesh.github.io/main/dashboard.html" class="nav-link"><span>📊</span>صفحه اصلی</a>
 
     <p class="nav-group">پیشرفت پروژه</p>
     <a href="#" class="nav-link active mt-3" aria-current="page"><span>📈</span>درصد پیشرفت</a>
@@ -119,60 +103,6 @@ tailwind.config = { theme: { extend: {
   </div>
 </main>
 
-
-<script>
-  // SHA-256 (pure JS, works on any http/https/file origin)
-  function sha256(str) {
-    const rotr = (n, x) => (x >>> n) | (x << (32 - n));
-    const K = [], H = [];
-    const isPrime = n => { for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; };
-    for (let n = 2, c = 0; c < 64; n++) if (isPrime(n)) {
-      K[c] = (Math.pow(n, 1 / 3) % 1) * 4294967296 | 0;
-      if (c < 8) H[c] = (Math.pow(n, 1 / 2) % 1) * 4294967296 | 0;
-      c++;
-    }
-    const bytes = Array.from(new TextEncoder().encode(str));
-    const bitLen = bytes.length * 8;
-    bytes.push(0x80);
-    while (bytes.length % 64 !== 56) bytes.push(0);
-    for (let i = 7; i >= 0; i--) bytes.push(i > 3 ? 0 : (bitLen >>> (i * 8)) & 255);
-    for (let off = 0; off < bytes.length; off += 64) {
-      const w = [];
-      for (let i = 0; i < 16; i++) w[i] = (bytes[off + 4 * i] << 24) | (bytes[off + 4 * i + 1] << 16) | (bytes[off + 4 * i + 2] << 8) | bytes[off + 4 * i + 3];
-      for (let i = 16; i < 64; i++) {
-        const s0 = rotr(7, w[i - 15]) ^ rotr(18, w[i - 15]) ^ (w[i - 15] >>> 3);
-        const s1 = rotr(17, w[i - 2]) ^ rotr(19, w[i - 2]) ^ (w[i - 2] >>> 10);
-        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
-      }
-      let [a, b, c, d, e, f, g, h] = H;
-      for (let i = 0; i < 64; i++) {
-        const t1 = (h + (rotr(6, e) ^ rotr(11, e) ^ rotr(25, e)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
-        const t2 = ((rotr(2, a) ^ rotr(13, a) ^ rotr(22, a)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
-        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
-      }
-      [a, b, c, d, e, f, g, h].forEach((v, i) => H[i] = (H[i] + v) | 0);
-    }
-    return H.map(v => (v >>> 0).toString(16).padStart(8, '0')).join('');
-  }
-
-  const PW_HASH = 'e02a6c4459ba792cf38e07f18e223c0096f6f299079c1b6d327d1d121b77fb1b';
-  function unlock() {
-    document.body.classList.remove('locked');
-    document.getElementById('lock').style.display = 'none';
-  }
-  try { if (sessionStorage.getItem('auth') === PW_HASH) unlock(); } catch (e) {}
-  document.getElementById('lockForm').addEventListener('submit', ev => {
-    ev.preventDefault();
-    const input = document.getElementById('pw'), err = document.getElementById('pwErr');
-    if (sha256(input.value) === PW_HASH) {
-      try { sessionStorage.setItem('auth', PW_HASH); } catch (e) {}
-      unlock();
-    } else {
-      err.classList.remove('hidden');
-      input.value = ''; input.focus();
-    }
-  });
-</script>
 <script>
   const sb = document.getElementById('sidebar'), ov = document.getElementById('overlay'), btn = document.getElementById('menuBtn');
   function toggle(open) {

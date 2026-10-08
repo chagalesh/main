@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>داشبورد مدیریت پروژه | چگالش</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['Vazirmatn', 'Tahoma', 'sans-serif'] },
+  colors: { ink: '#14213d', steel: '#1f3354', amber: { 500: '#f59e0b', 600: '#d97706' }, paper: '#f4f6f9' }
+}}}
+</script>
+<style type="text/tailwindcss">
+  .card { @apply bg-white rounded-xl border border-slate-200 p-5 flex flex-col; }
+  .card-head { @apply flex items-center gap-3 mb-4 pb-3 border-b border-slate-100; }
+  .card-icon { @apply w-9 h-9 rounded-lg bg-slate-100 text-ink flex items-center justify-center text-lg shrink-0; }
+  .card-title { @apply text-base font-bold text-ink; }
+  .row { @apply flex justify-between items-center gap-3 py-2.5; }
+  .row + .row { @apply border-t border-slate-100; }
+  .lbl { @apply text-sm text-slate-500; }
+  .val { @apply text-sm font-semibold text-slate-800; }
+  .na { @apply text-sm text-slate-400; }
+  .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-amber-500; }
+  .nav-link.active { @apply bg-amber-500 text-ink font-bold; }
+  .nav-group { @apply text-xs text-slate-500 px-3 pt-4 pb-1; }
+</style>
+</head>
+<body class="bg-paper font-sans text-slate-800 antialiased">
+
+<!-- Mobile top bar -->
+<header class="lg:hidden sticky top-0 z-30 bg-ink text-white flex items-center justify-between px-4 h-14">
+  <span class="font-bold text-sm">داشبورد مدیریتی چگالش</span>
+  <button id="menuBtn" class="p-2 rounded-lg hover:bg-white/10" aria-label="باز و بسته کردن منو" aria-expanded="false">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+</header>
+
+<div id="overlay" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+
+<!-- Sidebar -->
+<aside id="sidebar" class="fixed inset-y-0 right-0 z-40 w-64 bg-ink text-white flex flex-col translate-x-full lg:translate-x-0 transition-transform duration-200">
+  <div class="px-5 py-6 border-b border-white/10">
+    <h1 class="text-lg font-bold">داشبورد مدیریتی</h1>
+    <p class="text-xs text-slate-400 mt-1">شرکت مهندسین مشاور چگالش</p>
+  </div>
+  <nav class="flex-1 overflow-y-auto px-3 pb-4" aria-label="منوی اصلی">
+    <a href="#" class="nav-link active mt-3" aria-current="page"><span>📊</span>صفحه اصلی</a>
+
+    <p class="nav-group">پیشرفت پروژه</p>
+    <a href="#" class="nav-link"><span>📈</span>درصد پیشرفت</a>
+    <a href="#" class="nav-link"><span>📉</span>نمودارها</a>
+    <a href="#" class="nav-link"><span>📷</span>تصاویر پروژه</a>
+
+    <p class="nav-group">منابع</p>
+    <a href="#" class="nav-link"><span>👷</span>نیروی انسانی</a>
+    <a href="#" class="nav-link"><span>🚜</span>ماشین‌آلات</a>
+    <a href="#" class="nav-link"><span>💰</span>وضعیت مالی</a>
+
+    <p class="nav-group">کنترل و ایمنی</p>
+    <a href="#" class="nav-link"><span>⚠️</span>موانع و مشکلات</a>
+    <a href="#" class="nav-link"><span>🛡️</span>گزارش ایمنی (HSE)</a>
+
+    <p class="nav-group">بهره‌برداری</p>
+    <a href="#" class="nav-link"><span>🔧</span>پیش‌راه‌اندازی</a>
+    <a href="#" class="nav-link"><span>🚀</span>راه‌اندازی</a>
+    <a href="#" class="nav-link"><span>📞</span>ارتباطات</a>
+  </nav>
+  <div class="text-xs text-slate-500 text-center py-4 border-t border-white/10">
+    نسخه ۱.۰.۰ | توسعه توسط بهزاد موسوی
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="lg:mr-64 p-4 sm:p-6 lg:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Project banner -->
+    <section class="bg-ink rounded-2xl p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-6 border-r-4 border-amber-500">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm text-amber-500 font-semibold mb-2">شرکت مهندسین مشاور چگالش</p>
+        <h2 class="text-xl lg:text-2xl font-bold leading-relaxed mb-4">احداث واحدهای تسویه نفت‌های سنگین، CCR، کاهش بنزن و اتان‌زدایی</h2>
+        <div class="flex flex-wrap gap-3 text-sm">
+          <div class="bg-white/10 px-4 py-2 rounded-lg">📍 پالایشگاه شهید تندگویان تهران</div>
+          <div class="bg-white/10 px-4 py-2 rounded-lg">📄 قرارداد شماره <span dir="ltr" class="font-mono font-bold inline-block">99-51-008</span></div>
+        </div>
+      </div>
+      <img src="https://chagalesh.github.io/main/chagalesh.png" alt="لوگوی شرکت چگالش" class="h-16 md:h-20 w-auto object-contain bg-white rounded-xl p-2 self-start md:self-center">
+    </section>
+
+    <!-- KPI strip -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" aria-label="شاخص‌های کلیدی">
+      <div class="card !p-4"><span class="lbl">پیشرفت واقعی</span><span class="text-2xl font-bold text-slate-300 mt-1">—</span></div>
+      <div class="card !p-4"><span class="lbl">انحراف از برنامه</span><span class="text-2xl font-bold text-slate-300 mt-1">—</span></div>
+      <div class="card !p-4"><span class="lbl">تعداد کل پرسنل</span><span class="text-2xl font-bold text-slate-300 mt-1">—</span></div>
+      <div class="card !p-4"><span class="lbl">تعداد کل ماشین‌آلات</span><span class="text-2xl font-bold text-slate-300 mt-1">—</span></div>
+    </section>
+
+    <!-- Row 1 -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <article class="card">
+        <div class="card-head"><div class="card-icon">📅</div><h3 class="card-title">بازه زمانی پروژه</h3></div>
+        <div>
+          <div class="row"><span class="lbl">تاریخ شروع پروژه</span><span class="val" dir="ltr">1400/01/14</span></div>
+          <div class="row"><span class="lbl">تاریخ پایان اولیه</span><span class="val" dir="ltr">1403/04/14</span></div>
+          <div class="row"><span class="lbl">تاریخ پایان تمدید شده</span><span class="na">ثبت نشده</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div class="card-icon">💵</div><h3 class="card-title">اطلاعات مالی قرارداد</h3></div>
+        <div>
+          <div class="row"><span class="lbl">مبلغ اولیه پروژه</span><span class="na">ثبت نشده</span></div>
+          <div class="row"><span class="lbl">جمع مبالغ اضافه‌شده</span><span class="na">ثبت نشده</span></div>
+          <div class="row bg-slate-50 -mx-2 px-2 rounded-lg"><span class="text-sm font-bold text-ink">مبلغ فعلی قرارداد</span><span class="na font-bold">— ریال</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div class="card-icon">🤝</div><h3 class="card-title">طرفین پروژه</h3></div>
+        <div>
+          <div class="flex items-center gap-3 py-2.5">
+            <img src="https://chagalesh.github.io/main/troc.png" alt="لوگوی پالایشگاه تهران" class="h-10 w-10 object-contain shrink-0">
+            <div class="min-w-0"><p class="lbl">کارفرما</p><p class="val leading-relaxed">شرکت پالایش نفت شهید تندگویان تهران</p></div>
+          </div>
+          <div class="flex items-center gap-3 py-2.5 border-t border-slate-100">
+            <img src="https://chagalesh.github.io/main/odcc.png" alt="لوگوی ODCC" class="h-10 w-10 object-contain shrink-0">
+            <div class="min-w-0"><p class="lbl">مدیریت طرح</p><p class="val leading-relaxed">شرکت مهندسی و ساختمان نفت (ODCC)</p></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Row 2 -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <article class="card">
+        <div class="card-head"><div class="card-icon">📈</div><h3 class="card-title">درصد پیشرفت</h3></div>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between mb-1.5"><span class="lbl">پیشرفت برنامه‌ای</span><span class="na">—٪</span></div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full w-0 bg-steel rounded-full"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1.5"><span class="lbl">پیشرفت واقعی</span><span class="na">—٪</span></div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full w-0 bg-amber-500 rounded-full"></div></div>
+          </div>
+          <div class="row !pb-0 border-t border-slate-100"><span class="lbl">انحراف از برنامه</span><span class="na">—٪</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div class="card-icon">👷</div><h3 class="card-title">نیروی انسانی</h3></div>
+        <div>
+          <div class="row"><span class="lbl">تعداد کل پرسنل</span><span class="na">—</span></div>
+          <div class="row"><span class="lbl">نیروی مهندسی</span><span class="na">—</span></div>
+          <div class="row"><span class="lbl">نیروی اجرایی</span><span class="na">—</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div class="card-icon">🚜</div><h3 class="card-title">ماشین‌آلات</h3></div>
+        <div>
+          <div class="row"><span class="lbl">تعداد کل ماشین‌آلات</span><span class="na">—</span></div>
+          <div class="row"><span class="lbl">ماشین‌آلات سبک</span><span class="na">—</span></div>
+          <div class="row"><span class="lbl">ماشین‌آلات سنگین</span><span class="na">—</span></div>
+        </div>
+      </article>
+    </section>
+
+    <p class="text-xs text-slate-400 text-center pt-2">مقادیر «—» پس از ثبت اطلاعات در این بخش نمایش داده می‌شوند.</p>
+  </div>
+</main>
+
+<script>
+  const sb = document.getElementById('sidebar'), ov = document.getElementById('overlay'), btn = document.getElementById('menuBtn');
+  function toggle(open) {
+    sb.classList.toggle('translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+    btn.setAttribute('aria-expanded', open);
+  }
+  btn.addEventListener('click', () => toggle(sb.classList.contains('translate-x-full')));
+  ov.addEventListener('click', () => toggle(false));
+</script>
+</body>
+</html>

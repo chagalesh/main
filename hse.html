@@ -20,6 +20,12 @@ tailwind.config = { theme: { extend: {
   .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-amber-500; }
   .nav-link.active { @apply bg-amber-500 text-ink font-bold; }
   .nav-group { @apply text-xs text-slate-500 px-3 pt-4 pb-1; }
+  .stat { @apply flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3; }
+  .stat-lbl { @apply text-sm text-slate-500; }
+  .stat-val { @apply text-2xl font-bold text-slate-300; }
+  .stat-val.loaded { @apply text-ink; }
+  .stat.danger { @apply border-red-200 bg-red-50; }
+  .stat.danger .stat-val.loaded { @apply text-red-600; }
 </style>
 </head>
 <body class="bg-paper font-sans text-slate-800 antialiased">
@@ -69,5 +75,113 @@ tailwind.config = { theme: { extend: {
   </div>
 </aside>
 
+<!-- Main -->
+<main class="lg:mr-64 p-4 sm:p-6 lg:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- HSE stats card -->
+    <article class="card !p-5">
+      <div class="card-head"><div class="card-icon">🛡️</div><h3 class="card-title">آمار گزارشات ایمنی (HSE)</h3></div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3" dir="ltr">
+        <div class="stat" data-key="nearmiss"><span class="stat-lbl">Near miss</span><span class="stat-val">—</span></div>
+        <div class="stat" data-key="fac"><span class="stat-lbl">FAC</span><span class="stat-val">—</span></div>
+        <div class="stat" data-key="mtc"><span class="stat-lbl">MTC</span><span class="stat-val">—</span></div>
+        <div class="stat danger" data-key="lti"><span class="stat-lbl">LTI</span><span class="stat-val">—</span></div>
+        <div class="stat danger" data-key="fatality"><span class="stat-lbl">Fatality</span><span class="stat-val">—</span></div>
+        <div class="stat" data-key="fireincident"><span class="stat-lbl">Fire Incident</span><span class="stat-val">—</span></div>
+        <div class="stat" data-key="vehicleincident"><span class="stat-lbl">Vehicle Incident</span><span class="stat-val">—</span></div>
+        <div class="stat" data-key="tbm"><span class="stat-lbl">TBM</span><span class="stat-val">—</span></div>
+      </div>
+    </article>
+
+    <p id="dataStatus" class="text-xs text-slate-400 text-center pt-2">در حال بارگذاری اطلاعات از فایل اکسل…</p>
+  </div>
+</main>
+
+<script>
+  const sb = document.getElementById('sidebar'), ov = document.getElementById('overlay'), btn = document.getElementById('menuBtn');
+  function toggle(open) {
+    sb.classList.toggle('translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+    btn.setAttribute('aria-expanded', open);
+  }
+  btn.addEventListener('click', () => toggle(sb.classList.contains('translate-x-full')));
+  ov.addEventListener('click', () => toggle(false));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // ====== تنظیمات ======
+  const EXCEL_URL = 'https://chagalesh.github.io/main/hse.xlsx';
+
+  // عنوان‌ها دقیقاً همان متنی است که باید در فایل اکسل نوشته شود (حروف بزرگ/کوچک و فاصله مهم نیست)
+  const LABELS = {
+    nearmiss: 'Near miss', fac: 'FAC', mtc: 'MTC', lti: 'LTI',
+    fatality: 'Fatality', fireincident: 'Fire Incident',
+    vehicleincident: 'Vehicle Incident', tbm: 'TBM'
+  };
+  // ======================
+
+  const norm = s => String(s).toLowerCase().replace(/[\s\u200c:：_\-]/g, '');
+  const toEn = s => String(s).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const byNorm = {};
+  Object.entries(LABELS).forEach(([k, v]) => byNorm[norm(v)] = k);
+
+  function cellNumber(cell) {
+    const n = typeof cell.v === 'number' ? cell.v : parseFloat(toEn(cell.w ?? cell.v).replace(/[,٬\s]/g, ''));
+    return isNaN(n) ? null : n;
+  }
+
+  function readWorkbook(wb) {
+    const found = {};
+    wb.SheetNames.forEach(name => {
+      const ws = wb.Sheets[name];
+      if (!ws['!ref']) return;
+      const r = XLSX.utils.decode_range(ws['!ref']);
+      const at = (row, col) => {
+        if (row < r.s.r || row > r.e.r || col < r.s.c || col > r.e.c) return null;
+        const x = ws[XLSX.utils.encode_cell({ r: row, c: col })];
+        return x && x.v !== '' ? x : null;
+      };
+      for (let row = r.s.r; row <= r.e.r; row++) {
+        for (let col = r.s.c; col <= r.e.c; col++) {
+          const c = at(row, col);
+          if (!c || typeof c.v !== 'string') continue;
+          const key = byNorm[norm(c.v)];
+          if (!key || key in found) continue;
+          // مقدار: سلول عددی مجاور در سمت راست، چپ یا پایین
+          for (const [dr, dc] of [[0, 1], [0, -1], [1, 0]]) {
+            const x = at(row + dr, col + dc);
+            const n = x ? cellNumber(x) : null;
+            if (n !== null) { found[key] = n; break; }
+          }
+        }
+      }
+    });
+    return found;
+  }
+
+  function render(data) {
+    document.querySelectorAll('.stat').forEach(el => {
+      const key = el.dataset.key;
+      if (!(key in data)) return;
+      const out = el.querySelector('.stat-val');
+      out.textContent = data[key].toLocaleString('en-US');
+      out.classList.add('loaded');
+    });
+  }
+
+  const statusEl = document.getElementById('dataStatus');
+  fetch(EXCEL_URL + '?t=' + Date.now())
+    .then(res => { if (!res.ok) throw new Error(res.status); return res.arrayBuffer(); })
+    .then(buf => {
+      const data = readWorkbook(XLSX.read(buf, { type: 'array' }));
+      render(data);
+      const missing = Object.keys(LABELS).filter(k => !(k in data));
+      statusEl.textContent = missing.length
+        ? 'اطلاعات بارگذاری شد؛ این عنوان‌ها در اکسل پیدا نشد: ' + missing.map(k => LABELS[k]).join('، ')
+        : 'اطلاعات از فایل اکسل به‌روز شد.';
+    })
+    .catch(() => { statusEl.textContent = 'بارگذاری فایل اکسل ناموفق بود. اتصال اینترنت و آدرس فایل را بررسی کنید.'; });
+</script>
 </body>
 </html>

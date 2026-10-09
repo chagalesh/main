@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>درصد پیشرفت | داشبورد مدیریت پروژه چگالش</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['Vazirmatn', 'Tahoma', 'sans-serif'] },
+  colors: { ink: '#14213d', steel: '#1f3354', amber: { 500: '#f59e0b', 600: '#d97706' }, paper: '#f4f6f9' }
+}}}
+</script>
+<style type="text/tailwindcss">
+  .card { @apply bg-white rounded-xl border border-slate-200 p-3 flex flex-col; }
+  .card-head { @apply flex items-center gap-2 mb-2 pb-2 border-b border-slate-100; }
+  .card-icon { @apply w-7 h-7 rounded-lg bg-slate-100 text-ink flex items-center justify-center text-base shrink-0; }
+  .card-title { @apply text-sm font-bold text-ink; }
+  .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-amber-500; }
+  .nav-link.active { @apply bg-amber-500 text-ink font-bold; }
+  .nav-group { @apply text-xs text-slate-500 px-3 pt-4 pb-1; }
+</style>
+</head>
+<body class="bg-paper font-sans text-slate-800 antialiased">
+
+<!-- Mobile top bar -->
+<header class="lg:hidden sticky top-0 z-30 bg-ink text-white flex items-center justify-between px-4 h-14">
+  <span class="font-bold text-sm">داشبورد مدیریتی چگالش</span>
+  <button id="menuBtn" class="p-2 rounded-lg hover:bg-white/10" aria-label="باز و بسته کردن منو" aria-expanded="false">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+</header>
+
+<div id="overlay" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+
+<!-- Sidebar -->
+<aside id="sidebar" class="fixed inset-y-0 right-0 z-40 w-64 bg-ink text-white flex flex-col translate-x-full lg:translate-x-0 transition-transform duration-200">
+  <div class="px-5 py-6 border-b border-white/10">
+    <h1 class="text-lg font-bold">داشبورد مدیریت</h1>
+  </div>
+  <nav class="flex-1 overflow-y-auto px-3 pb-4" aria-label="منوی اصلی">
+    <a href="https://chagalesh.github.io/main/dashboard.html" class="nav-link"><span>📊</span>صفحه اصلی</a>
+
+    <p class="nav-group">پیشرفت پروژه</p>
+    <a href="#" class="nav-link"><span>📈</span>درصد پیشرفت</a>
+    <a href="#" class="nav-link"><span>📉</span>نمودارها</a>
+    <a href="#" class="nav-link active mt-3" aria-current="page"><span>📷</span>تصاویر پروژه</a>
+    <a href="#" class="nav-link"><span>⚠️</span>موانع و مشکلات</a>
+
+    <p class="nav-group">منابع</p>
+    <a href="#" class="nav-link"><span>👷</span>نیروی انسانی</a>
+    <a href="#" class="nav-link"><span>🚜</span>ماشین‌آلات</a>
+    <a href="#" class="nav-link"><span>💰</span>وضعیت مالی</a>
+
+    <p class="nav-group">کنترل و ایمنی</p>
+    <a href="#" class="nav-link"><span>🛡️</span>گزارشات ایمنی</a>
+
+    <p class="nav-group">بهره‌برداری</p>
+    <a href="#" class="nav-link"><span>🔧</span>پیش‌راه‌اندازی</a>
+    <a href="#" class="nav-link"><span>🚀</span>راه‌اندازی</a>
+    <p class="nav-group">خروجی</p>
+    <a href="#" class="nav-link"><span>🖨️</span>چاپ گزارشات</a>
+  </nav>
+  <div class="text-xs text-slate-500 text-center py-4 border-t border-white/10">
+    نسخه ۱.۰.۰ | توسعه توسط بهزاد موسوی
+  </div>
+</aside>
+
+</body>
+</html>

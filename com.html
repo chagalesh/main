@@ -14,12 +14,18 @@ tailwind.config = { theme: { extend: {
 </script>
 <style type="text/tailwindcss">
   .card { @apply bg-white rounded-xl border border-slate-200 p-3 flex flex-col; }
-  .card-head { @apply flex items-center gap-2 mb-2 pb-2 border-b border-slate-100; }
-  .card-icon { @apply w-7 h-7 rounded-lg bg-slate-100 text-ink flex items-center justify-center text-base shrink-0; }
-  .card-title { @apply text-sm font-bold text-ink; }
+  .card-head { @apply flex items-center gap-2 mb-1 pb-1 border-b border-slate-100; }
+  .card-icon { @apply w-5 h-5 rounded-md bg-slate-100 text-ink flex items-center justify-center text-xs shrink-0; }
+  .card-title { @apply text-xs font-bold text-ink; }
   .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-amber-500; }
   .nav-link.active { @apply bg-amber-500 text-ink font-bold; }
   .nav-group { @apply text-xs text-slate-500 px-3 pt-4 pb-1; }
+  .tbl { @apply w-full text-[11px] leading-4 border-collapse; }
+  .tbl th { @apply bg-ink text-white text-[11px] font-bold px-1.5 py-0.5 text-center align-middle whitespace-nowrap; }
+  .tbl td { @apply px-1.5 py-0 border border-slate-200 text-slate-700 text-center align-middle whitespace-nowrap; }
+  .tbl td.grp { @apply bg-slate-50 font-bold text-ink; }
+  .tbl td.num { @apply tabular-nums; }
+  .tbl tr.total td { @apply bg-slate-200 font-bold text-ink; }
 </style>
 </head>
 <body class="bg-paper font-sans text-slate-800 antialiased">
@@ -69,5 +75,175 @@ tailwind.config = { theme: { extend: {
   </div>
 </aside>
 
+<!-- Main -->
+<main class="lg:mr-64 p-2 lg:p-3">
+  <div class="max-w-[1800px] mx-auto space-y-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <!-- Task table -->
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">✅</div><h3 class="card-title">وضعیت تسک‌های راه‌اندازی (Task)</h3></div>
+      <div id="taskTable" dir="ltr" class="overflow-x-auto rounded-lg border border-slate-200"></div>
+    </article>
+
+    <!-- Punch table -->
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">📝</div><h3 class="card-title">وضعیت پانچ‌لیست راه‌اندازی (Punch)</h3></div>
+      <div id="punchTable" dir="ltr" class="overflow-x-auto rounded-lg border border-slate-200"></div>
+    </article>
+
+    <!-- Charts (side by side, same row) -->
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">📊</div><h3 class="card-title">نمودار وضعیت تسک‌ها (Grand Total)</h3></div>
+      <div id="taskChart" dir="ltr"></div>
+    </article>
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">📊</div><h3 class="card-title">نمودار وضعیت پانچ‌لیست (Grand Total)</h3></div>
+      <div id="punchChart" dir="ltr"></div>
+    </article>
+    </div>
+
+    <p id="dataStatus" class="text-xs text-slate-400 text-center">در حال به‌روزرسانی اطلاعات از فایل‌های اکسل…</p>
+  </div>
+</main>
+
+<script>
+  const sb = document.getElementById('sidebar'), ov = document.getElementById('overlay'), btn = document.getElementById('menuBtn');
+  function toggle(open) {
+    sb.classList.toggle('translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+    btn.setAttribute('aria-expanded', open);
+  }
+  btn.addEventListener('click', () => toggle(sb.classList.contains('translate-x-full')));
+  ov.addEventListener('click', () => toggle(false));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // ====== تنظیمات ======
+  const TASK_URL  = 'https://chagalesh.github.io/main/comtask.xlsx';
+  const PUNCH_URL = 'https://chagalesh.github.io/main/compunch.xlsx';
+
+  // آخرین داده‌های شناخته‌شده (در صورت بارگذاری نشدن اکسل نمایش داده می‌شود)
+  const TASK_FALLBACK  = [["Row Labels","Discipline","Task Code","Total","Done","Remain"],["CCR","Electrical","FTS",273,0,273],["","FGS","FTS",220,0,220],["","Instrument","FTS",1138,0,1138],["","Mechanical","OTS",58,0,58],["","Piping","PVP",123,0,123],["","Telecum","FTS",53,0,53],["COMMON","Electrical","FTS",671,100,571],["","FGS","FTS",351,0,351],["","Instrument","FTS",306,58,248],["","Mechanical","OTS",24,0,24],["","Piping","PVP",249,11,238],["","Telecum","FTS",82,0,82],["EP","Electrical","FTS",1938,1550,388],["","FGS","FTS",231,0,231],["","Instrument","FTS",803,707,96],["","Mechanical","OTS",60,0,60],["","Piping","PVP",57,22,35],["","Telecum","FTS",25,0,25],["NHT","Electrical","FTS",197,14,183],["","FGS","FTS",178,0,178],["","Instrument","FTS",1212,0,1212],["","Mechanical","OTS",48,0,48],["","Piping","PVP",62,0,62],["","Telecum","FTS",41,0,41],["Grand Total","","FTS",7719,2429,5290],["","","OTS",190,0,190],["","","PVP",491,33,458]];
+  const PUNCH_FALLBACK = [["Unit","Discipline","Category","Total","Cleared","Remain"],["CCR","Mechanical","B",44,0,44],["","","C",80,0,80],["COMMON","Electrical","B",240,156,84],["","","C",207,97,110],["","FGS","B",1,0,1],["","Instrument","B",132,0,132],["","","C",94,2,92],["","Mechanical","B",177,46,131],["","","C",80,6,74],["","Piping","B",22,7,15],["","","C",757,81,676],["EP","Electrical","B",525,488,37],["","","C",403,401,2],["","FGS","B",199,149,50],["","Instrument","B",562,558,4],["","","C",31,31,0],["","Mechanical","B",492,189,303],["","","C",577,251,326],["","Piping","B",111,83,28],["","","C",1020,812,208],["NHT","Electrical","B",162,37,125],["","","C",155,20,135],["","FGS","B",62,0,62],["","","C",58,0,58],["","Instrument","B",1029,0,1029],["","","C",459,0,459],["","Mechanical","B",243,0,243],["","","C",433,0,433],["","Piping","B",11,0,11],["","","C",446,0,446],["Grand Total","","B",4012,1713,2299],["","","C",4800,1701,3099]];
+  // ======================
+
+  const norm = s => String(s ?? '').toLowerCase().replace(/[\s\u200c]/g, '');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = v => typeof v === 'number' ? v.toLocaleString('en-US') : (v === '' || v == null ? '—' : esc(v));
+
+  // خواندن جدول: ردیف سربرگ با ستون اول «Unit»؛ سلول‌های ادغام‌شده (Unit / Discipline) پر می‌شوند
+  function parseSheet(aoa) {
+    const h = aoa.findIndex(r => ['unit', 'rowlabels'].includes(norm(r[0])));
+    if (h < 0) return null;
+    const head = aoa[h].slice(0, 6).map(v => String(v ?? ''));
+    const rows = [];
+    let unit = '', disc = '';
+    for (let i = h + 1; i < aoa.length; i++) {
+      const r = aoa[i];
+      if (r.slice(0, 6).every(v => v === '' || v == null)) continue;
+      const u = String(r[0] ?? '').trim(), d = String(r[1] ?? '').trim();
+      if (u) { unit = u; disc = d; } else if (d) { disc = d; }
+      rows.push({ unit, disc, code: String(r[2] ?? '').trim(), nums: [r[3], r[4], r[5]], total: norm(unit) === 'grandtotal' });
+    }
+    return { head, rows };
+  }
+
+  function span(rows, i, same) {
+    let n = 0;
+    while (i + n < rows.length && same(rows[i + n])) n++;
+    return n;
+  }
+
+  function renderTable(el, t) {
+    const { head, rows } = t;
+    let html = '<table class="tbl"><thead><tr>' + head.map(x => '<th>' + esc(x) + '</th>').join('') + '</tr></thead><tbody>';
+    rows.forEach((r, i) => {
+      const prev = rows[i - 1];
+      const newUnit = !prev || prev.unit !== r.unit;
+      html += '<tr class="' + (r.total ? 'total' : '') + '">';
+      if (newUnit) {
+        const n = span(rows, i, x => x.unit === r.unit);
+        html += r.total
+          ? '<td class="grp" colspan="2" rowspan="' + n + '">' + esc(r.unit) + '</td>'
+          : '<td class="grp" rowspan="' + n + '">' + esc(r.unit) + '</td>';
+      }
+      if (!r.total && (newUnit || prev.disc !== r.disc)) {
+        const n = span(rows, i, x => x.unit === r.unit && x.disc === r.disc);
+        html += '<td class="grp" rowspan="' + n + '">' + esc(r.disc) + '</td>';
+      }
+      html += '<td class="code">' + esc(r.code) + '</td>';
+      r.nums.forEach(v => { html += '<td class="num">' + fmt(v) + '</td>'; });
+      html += '</tr>';
+    });
+    el.innerHTML = html + '</tbody></table>';
+  }
+
+  // نمودار میله‌ای عمودی از ردیف(های) Grand Total
+  const COLORS = ['#1f3354', '#059669', '#f59e0b'];
+  function niceMax(v) {
+    if (v <= 0) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+  }
+  function renderChart(el, t) {
+    const groups = t.rows.filter(r => r.total);
+    if (!groups.length) { el.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">ردیف Grand Total پیدا نشد.</p>'; return; }
+    const names = t.head.slice(3, 6);
+    const num = v => typeof v === 'number' ? v : 0;
+    const max = niceMax(Math.max(...groups.flatMap(g => g.nums.map(num))));
+    const W = 520, H = 150, L = 44, R = 8, T = 16, B = 18, PH = H - T - B, PW = W - L - R;
+    const gw = PW / groups.length, bw = Math.min(44, gw * 0.7 / 3), gap = 4;
+    const y = v => T + PH - PH * v / max;
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="w-full h-auto" role="img" aria-label="نمودار Grand Total">';
+    for (let i = 0; i <= 4; i++) {
+      const v = max * i / 4, yy = y(v);
+      svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e8f0"/>' +
+             '<text x="' + (L - 5) + '" y="' + (yy + 3) + '" text-anchor="end" font-size="9" fill="#64748b">' + v.toLocaleString('en-US') + '</text>';
+    }
+    groups.forEach((g, gi) => {
+      const cx = L + gw * gi + gw / 2, x0 = cx - (3 * bw + 2 * gap) / 2;
+      g.nums.forEach((v, i) => {
+        const n = num(v), x = x0 + i * (bw + gap), top = y(n);
+        svg += '<rect x="' + x + '" y="' + top + '" width="' + bw + '" height="' + (T + PH - top) + '" rx="2" fill="' + COLORS[i] + '"/>' +
+               '<text x="' + (x + bw / 2) + '" y="' + (top - 3) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#14213d">' + n.toLocaleString('en-US') + '</text>';
+      });
+      const label = g.code.length <= 1 ? t.head[2] + ' ' + g.code : g.code;
+      svg += '<text x="' + cx + '" y="' + (H - 4) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#14213d">' + esc(label) + '</text>';
+    });
+    svg += '</svg>';
+    const legend = '<div class="flex justify-center gap-4 text-[11px] text-slate-600 mb-1">' +
+      names.map((n, i) => '<span class="flex items-center gap-1"><i class="inline-block w-2.5 h-2.5 rounded-sm" style="background:' + COLORS[i] + '"></i>' + esc(n) + '</span>').join('') + '</div>';
+    el.innerHTML = legend + svg;
+  }
+
+  function show(el, chartEl, t) { renderTable(el, t); renderChart(chartEl, t); }
+
+  function load(url, el, chartEl, fallback) {
+    show(el, chartEl, parseSheet(fallback));
+    return fetch(url + '?t=' + Date.now())
+      .then(res => { if (!res.ok) throw new Error(res.status); return res.arrayBuffer(); })
+      .then(buf => {
+        const wb = XLSX.read(buf, { type: 'array' });
+        for (const name of wb.SheetNames) {
+          const p = parseSheet(XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' }));
+          if (p && p.rows.length) { show(el, chartEl, p); return; }
+        }
+        throw new Error('table not found');
+      });
+  }
+
+  const statusEl = document.getElementById('dataStatus');
+  Promise.allSettled([
+    load(TASK_URL, document.getElementById('taskTable'), document.getElementById('taskChart'), TASK_FALLBACK),
+    load(PUNCH_URL, document.getElementById('punchTable'), document.getElementById('punchChart'), PUNCH_FALLBACK)
+  ]).then(([a, b]) => {
+    const failed = [];
+    if (a.status === 'rejected') failed.push('Task');
+    if (b.status === 'rejected') failed.push('Punch');
+    statusEl.textContent = failed.length
+      ? 'بارگذاری فایل اکسل ناموفق بود (' + failed.join('، ') + ')؛ آخرین داده‌های ذخیره‌شده نمایش داده می‌شود.'
+      : 'اطلاعات از فایل‌های اکسل به‌روز شد.';
+  });
+</script>
 </body>
 </html>

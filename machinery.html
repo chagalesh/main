@@ -14,12 +14,17 @@ tailwind.config = { theme: { extend: {
 </script>
 <style type="text/tailwindcss">
   .card { @apply bg-white rounded-xl border border-slate-200 p-3 flex flex-col; }
-  .card-head { @apply flex items-center gap-2 mb-2 pb-2 border-b border-slate-100; }
-  .card-icon { @apply w-7 h-7 rounded-lg bg-slate-100 text-ink flex items-center justify-center text-base shrink-0; }
-  .card-title { @apply text-sm font-bold text-ink; }
+  .card-head { @apply flex items-center gap-2 mb-1 pb-1 border-b border-slate-100; }
+  .card-icon { @apply w-5 h-5 rounded-md bg-slate-100 text-ink flex items-center justify-center text-xs shrink-0; }
+  .card-title { @apply text-xs font-bold text-ink; }
   .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-amber-500; }
   .nav-link.active { @apply bg-amber-500 text-ink font-bold; }
   .nav-group { @apply text-xs text-slate-500 px-3 pt-4 pb-1; }
+  .tbl { @apply w-full text-[11px] leading-4 border-collapse; }
+  .tbl th { @apply bg-ink text-white text-[11px] font-bold px-1.5 py-0.5 text-center align-middle whitespace-nowrap; }
+  .tbl td { @apply px-1.5 py-0 border border-slate-200 text-slate-700 text-center align-middle whitespace-nowrap; }
+  .tbl td.num { @apply tabular-nums; }
+  .tbl tr.total td { @apply bg-slate-200 font-bold text-ink; }
 </style>
 </head>
 <body class="bg-paper font-sans text-slate-800 antialiased">
@@ -69,5 +74,146 @@ tailwind.config = { theme: { extend: {
   </div>
 </aside>
 
+<!-- Main -->
+<main class="lg:mr-64 p-2 lg:p-3">
+  <div class="max-w-[1800px] mx-auto space-y-2">
+    <div id="tables" class="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start"></div>
+
+    <!-- Chart -->
+    <article id="chartCard" class="card !p-2">
+      <div class="card-head"><div class="card-icon">📊</div><h3 class="card-title">نمودار تعداد ماشین‌آلات</h3></div>
+      <div id="chartLegend" dir="ltr" class="flex justify-center gap-4 text-[11px] text-slate-600"></div>
+      <div id="chart" dir="ltr" class="overflow-x-auto"></div>
+    </article>
+
+    <p id="dataStatus" class="text-xs text-slate-400 text-center">در حال به‌روزرسانی اطلاعات از پایگاه داده…</p>
+  </div>
+</main>
+
+<script>
+  const sb = document.getElementById('sidebar'), ov = document.getElementById('overlay'), btn = document.getElementById('menuBtn');
+  function toggle(open) {
+    sb.classList.toggle('translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+    btn.setAttribute('aria-expanded', open);
+  }
+  btn.addEventListener('click', () => toggle(sb.classList.contains('translate-x-full')));
+  ov.addEventListener('click', () => toggle(false));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // ====== تنظیمات ======
+  const EXCEL_URL = 'https://chagalesh.github.io/main/machinery.xlsx';
+
+  // آخرین داده‌های شناخته‌شده (در صورت بارگذاری نشدن اکسل نمایش داده می‌شود)
+  const FALLBACK = [["Heavy Vehicle","Active","","Light vehicle","Active"],["Mini shovel",4,"","Bus (L)",1],["Excavator (H)",4,"","Mini-Bus(L)",2],["Pichor / Jack Hammer",1,"","Pick Up(L)",2],["Bulldozer  (H)",3,"","Light Vehicle ( 2Wd & 4Wd )(L)",32],["Loader (H)",2,"","Ambulance(L)",1],["Bob Cat ( Backhoe ) (H)",4,"","",""],["Grader (H)",2,"","",""],["Compact Roller/Vibrating Roller(H)",6,"","",""],["Batching Plant",1,"","",""],["Concrete / Truck Mixer (H)",1,"","",""],["Concrete Pump (H)",2,"","",""],["Concrete Vibrator",1,"","",""],["Water Tank Lorry",5,"","",""],["Fuel Tank Lorry",1,"","",""],["Dump Truck > 10 Ton(H)",11,"","",""],["Tractor (H)",3,"","",""],["Truck (H)",5,"","",""],["Trailer (H)",3,"","",""],["Water Tanker",5,"","",""],["Boom Truck > 5 Ton (H)",8,"","",""],["Crane 11~35 Ton  (H)",11,"","",""],["Crane 36~50 Ton (H)",2,"","",""],["Crane 51~70 Ton (H)",2,"","",""],["Crane 71~100 Ton (H)",1,"","",""],["Crane 101~200 Ton(H)",1,"","",""],["Crane 201~250 Ton(H)",2,"","",""],["Lift Truck ( 6 ~ 10 Ton )(H)",2,"","",""],["Lift Truck > 10 Ton(H)",2,"","",""]];
+
+  const TITLES = {
+    heavyvehicle: { icon: '🚜', title: 'ماشین‌آلات سنگین (Heavy Vehicle)' },
+    lightvehicle: { icon: '🚗', title: 'ماشین‌آلات سبک (Light Vehicle)' }
+  };
+  // ======================
+
+  const norm = s => String(s ?? '').toLowerCase().replace(/[\s\u200c]/g, '');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = v => typeof v === 'number' ? v.toLocaleString('en-US') : (v === '' || v == null ? '—' : esc(v));
+
+  // ردیف اول سربرگ است؛ هر سربرگ غیرخالی + ستون کناری‌اش یک جدول است (ستون خالی = جداکننده)
+  function parseBlocks(aoa) {
+    const h = aoa.findIndex(r => r.some(v => String(v ?? '').trim() !== ''));
+    if (h < 0) return [];
+    const head = aoa[h], blocks = [];
+    for (let c = 0; c < head.length; c++) {
+      const name = String(head[c] ?? '').trim();
+      if (!name) continue;
+      const rows = [];
+      for (let i = h + 1; i < aoa.length; i++) {
+        const label = String(aoa[i][c] ?? '').trim();
+        if (label) rows.push([label, aoa[i][c + 1]]);
+      }
+      blocks.push({ name, valueHead: String(head[c + 1] ?? '').trim(), rows });
+      c++;
+    }
+    return blocks.filter(b => b.rows.length);
+  }
+
+  function tableHtml(b, items) {
+    return '<table class="tbl"><thead><tr><th>' + esc(b.name) + '</th><th>' + esc(b.valueHead) + '</th></tr></thead><tbody>' +
+      items.map(it => '<tr' + (it[2] ? ' class="total"' : '') + '><td>' + esc(it[0]) + '</td><td class="num">' + fmt(it[1]) + '</td></tr>').join('') +
+      '</tbody></table>';
+  }
+
+  // جدول‌های بلند (بیش از ۱۲ ردیف) برای جلوگیری از اسکرول، در دو نیمه کنار هم نمایش داده می‌شوند
+  function render(blocks) {
+    document.getElementById('tables').innerHTML = blocks.map(b => {
+      const meta = TITLES[norm(b.name)] || { icon: '🚜', title: b.name };
+      const sum = b.rows.reduce((a, r) => a + (typeof r[1] === 'number' ? r[1] : 0), 0);
+      const items = b.rows.map(r => [r[0], r[1], false]).concat([['Total', sum, true]]);
+      const h = Math.ceil(items.length / 2);
+      const parts = b.rows.length > 12 ? [items.slice(0, h), items.slice(h)] : [items];
+      return '<article class="card !p-2"><div class="card-head"><div class="card-icon">' + meta.icon + '</div><h3 class="card-title">' + esc(meta.title) + '</h3></div>' +
+        '<div dir="ltr" class="flex flex-wrap gap-2">' +
+        parts.map(p => '<div class="flex-1 min-w-[220px] overflow-x-auto rounded-lg border border-slate-200">' + tableHtml(b, p) + '</div>').join('') +
+        '</div></article>';
+    }).join('');
+    current = blocks;
+    requestAnimationFrame(renderChart);
+  }
+
+  // نمودار میله‌ای عمودی تعداد هر ماشین؛ ارتفاع طوری تنظیم می‌شود که صفحه اسکرول نخواهد داشت
+  const COLORS = ['#1f3354', '#f59e0b'];
+  let current = [];
+  function renderChart() {
+    const wrap = document.getElementById('chart');
+    const bars = [];
+    current.forEach((b, bi) => b.rows.forEach(r => bars.push({
+      label: String(r[0]).replace(/\s*\((?:H|L)\)\s*$/i, ''), v: typeof r[1] === 'number' ? r[1] : 0, bi
+    })));
+    document.getElementById('chartLegend').innerHTML = current.map((b, i) =>
+      '<span class="flex items-center gap-1"><i class="inline-block w-2.5 h-2.5 rounded-sm" style="background:' + COLORS[i % 2] + '"></i>' + esc(b.name) + '</span>').join('');
+    if (!bars.length) { wrap.innerHTML = ''; return; }
+    const top0 = document.getElementById('chartCard').getBoundingClientRect().top + window.scrollY;
+    const W = Math.max(wrap.clientWidth || 720, 720);
+    const H = Math.max(200, Math.min(340, window.innerHeight - top0 - 100));
+    const lab = bars.map(b => b.label.length > 30 ? b.label.slice(0, 29) + '…' : b.label);
+    const B = Math.min(140, Math.round(Math.max(...lab.map(x => x.length)) * 4.2 + 14));
+    const L = 32, R = 8, T = 16, PH = H - T - B, PW = W - L - R;
+    const m = Math.max(1, Math.max(...bars.map(b => b.v)) / 4), p = Math.max(1, Math.pow(10, Math.floor(Math.log10(m))));
+    const step = [1, 2, 3, 4, 5, 10].map(f => f * p).find(x => x >= m), maxV = step * 4;
+    const y = v => T + PH - PH * v / maxV;
+    const slot = PW / bars.length, bw = Math.min(26, slot * 0.62);
+    let svg = '<svg width="' + W + '" height="' + H + '" role="img" aria-label="نمودار تعداد ماشین‌آلات">';
+    for (let i = 0; i <= 4; i++) {
+      const v = step * i, yy = y(v);
+      svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e8f0"/>' +
+             '<text x="' + (L - 5) + '" y="' + (yy + 3) + '" text-anchor="end" font-size="9" fill="#64748b">' + v + '</text>';
+    }
+    bars.forEach((b, i) => {
+      const x = L + slot * i + (slot - bw) / 2, cx = x + bw / 2, t = y(b.v);
+      svg += '<rect x="' + x + '" y="' + t + '" width="' + bw + '" height="' + (T + PH - t) + '" rx="2" fill="' + COLORS[b.bi % 2] + '"/>' +
+             '<text x="' + cx + '" y="' + (t - 3) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#14213d">' + b.v.toLocaleString('en-US') + '</text>' +
+             '<text transform="translate(' + (cx + 3) + ',' + (T + PH + 10) + ') rotate(-55)" text-anchor="end" font-size="9" fill="#475569">' + esc(lab[i]) + '</text>';
+    });
+    wrap.innerHTML = svg + '</svg>';
+  }
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderChart, 150); });
+  window.addEventListener('load', renderChart);
+
+  render(parseBlocks(FALLBACK));
+
+  const statusEl = document.getElementById('dataStatus');
+  fetch(EXCEL_URL + '?t=' + Date.now())
+    .then(res => { if (!res.ok) throw new Error(res.status); return res.arrayBuffer(); })
+    .then(buf => {
+      const wb = XLSX.read(buf, { type: 'array' });
+      for (const name of wb.SheetNames) {
+        const blocks = parseBlocks(XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' }));
+        if (blocks.length) { render(blocks); statusEl.textContent = 'اطلاعات از پایگاه داده به‌روز شد.'; return; }
+      }
+      throw new Error('table not found');
+    })
+    .catch(() => { statusEl.textContent = 'بارگذاری پایگاه داده ناموفق بود؛ آخرین داده‌های ذخیره‌شده نمایش داده می‌شود.'; });
+</script>
 </body>
 </html>

@@ -14,12 +14,18 @@ tailwind.config = { theme: { extend: {
 </script>
 <style type="text/tailwindcss">
   .card { @apply bg-white rounded-xl border border-slate-200 p-3 flex flex-col; }
-  .card-head { @apply flex items-center gap-2 mb-2 pb-2 border-b border-slate-100; }
-  .card-icon { @apply w-7 h-7 rounded-lg bg-slate-100 text-ink flex items-center justify-center text-base shrink-0; }
-  .card-title { @apply text-sm font-bold text-ink; }
+  .card-head { @apply flex items-center gap-2 mb-1 pb-1 border-b border-slate-100; }
+  .card-icon { @apply w-5 h-5 rounded-md bg-slate-100 text-ink flex items-center justify-center text-xs shrink-0; }
+  .card-title { @apply text-xs font-bold text-ink; }
   .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-amber-500; }
   .nav-link.active { @apply bg-amber-500 text-ink font-bold; }
   .nav-group { @apply text-xs text-slate-500 px-3 pt-4 pb-1; }
+  .tbl { @apply w-full text-[11px] leading-4 border-collapse; }
+  .tbl th { @apply bg-ink text-white text-[11px] font-bold px-1.5 py-0.5 text-center align-middle whitespace-nowrap; }
+  .tbl td { @apply px-1.5 py-0 border border-slate-200 text-slate-700 text-center align-middle whitespace-nowrap; }
+  .tbl td.grp { @apply bg-slate-50 font-bold text-ink; }
+  .tbl td.num { @apply tabular-nums; }
+  .tbl tr.total td { @apply bg-slate-200 font-bold text-ink; }
 </style>
 </head>
 <body class="bg-paper font-sans text-slate-800 antialiased">
@@ -69,5 +75,178 @@ tailwind.config = { theme: { extend: {
   </div>
 </aside>
 
+<!-- Main -->
+<main class="lg:mr-64 p-2 lg:p-3">
+  <div class="max-w-[1800px] mx-auto space-y-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+
+    <!-- Task table -->
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">✅</div><h3 class="card-title">وضعیت تسک‌های پیش‌راه‌اندازی (Task)</h3></div>
+      <div id="taskTable" dir="ltr" class="overflow-x-auto rounded-lg border border-slate-200"></div>
+    </article>
+
+    <div class="space-y-3">
+    <!-- Punch table -->
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">📝</div><h3 class="card-title">وضعیت پانچ‌لیست پیش‌راه‌اندازی (Punch)</h3></div>
+      <div id="punchTable" dir="ltr" class="overflow-x-auto rounded-lg border border-slate-200"></div>
+    </article>
+
+    <!-- Charts (from Grand Total) -->
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">📊</div><h3 class="card-title">نمودار وضعیت تسک‌ها (Grand Total)</h3></div>
+      <div id="taskChart" dir="ltr"></div>
+    </article>
+    <article class="card !p-2">
+      <div class="card-head"><div class="card-icon">📊</div><h3 class="card-title">نمودار وضعیت پانچ‌لیست (Grand Total)</h3></div>
+      <div id="punchChart" dir="ltr"></div>
+    </article>
+    </div>
+    </div>
+
+    <p id="dataStatus" class="text-xs text-slate-400 text-center">در حال به‌روزرسانی اطلاعات از فایل‌های اکسل…</p>
+  </div>
+</main>
+
+<script>
+  const sb = document.getElementById('sidebar'), ov = document.getElementById('overlay'), btn = document.getElementById('menuBtn');
+  function toggle(open) {
+    sb.classList.toggle('translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+    btn.setAttribute('aria-expanded', open);
+  }
+  btn.addEventListener('click', () => toggle(sb.classList.contains('translate-x-full')));
+  ov.addEventListener('click', () => toggle(false));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // ====== تنظیمات ======
+  const TASK_URL  = 'https://chagalesh.github.io/main/precomtask.xlsx';
+  const PUNCH_URL = 'https://chagalesh.github.io/main/precompunch.xlsx';
+
+  // آخرین داده‌های شناخته‌شده (در صورت بارگذاری نشدن اکسل نمایش داده می‌شود)
+  const TASK_FALLBACK  = [["Unit","Discipline","Task Code","Total","Done","Remain"],["CCR","Electrical","CCK",508,0,508],["","","STS",458,0,458],["","FGS","CCK",390,0,390],["","","STS",245,0,245],["","Instrument","CCK",2789,0,2789],["","","STS",2913,0,2913],["","Mechanical","CCK",227,0,227],["","","STS",59,0,59],["","Piping","CCK",2574,324,2250],["","","STS",1884,325,1559],["","Safety","CCK",17,0,17],["","Telecum","CCK",236,0,236],["","","STS",130,0,130],["COMMON","Electrical","CCK",1335,619,716],["","","STS",1538,659,879],["","FGS","CCK",336,1,335],["","","STS",222,0,222],["","Instrument","CCK",1012,220,792],["","","STS",871,249,622],["","Mechanical","CCK",133,9,124],["","","STS",42,10,32],["","Piping","CCK",1932,763,1169],["","","STS",1515,731,784],["","Safety","CCK",39,0,39],["","Telecum","CCK",466,0,466],["","","STS",327,0,327],["EP","Electrical","CCK",1337,1252,85],["","","STS",1936,1593,343],["","FGS","CCK",258,114,144],["","","STS",141,128,13],["","Instrument","CCK",1467,1228,239],["","","STS",1411,1257,154],["","Mechanical","CCK",87,63,24],["","","STS",23,18,5],["","Piping","CCK",2550,2315,235],["","","STS",1574,1476,98],["","Safety","CCK",28,0,28],["","Telecum","CCK",113,0,113],["","","STS",64,0,64],["NHT","Electrical","CCK",403,100,303],["","","STS",371,112,259],["","FGS","CCK",151,3,148],["","","STS",56,0,56],["","Instrument","CCK",2910,81,2829],["","","STS",2829,0,2829],["","Mechanical","CCK",117,0,117],["","","STS",54,0,54],["","Piping","CCK",2402,824,1578],["","","STS",1752,1106,646],["","Safety","CCK",29,0,29],["","Telecum","CCK",156,0,156],["","","STS",84,0,84],["Grand Total","","CCK",24002,7916,16086],["","","STS",20499,7664,12835]];
+  const PUNCH_FALLBACK = [["Unit","Discipline","Category","Total","Cleared","Remain"],["CCR","Mechanical","A",97,0,97],["COMMON","Electrical","A",485,349,136],["","Instrument","A",20,2,18],["","Mechanical","A",116,11,105],["","Piping","A",183,55,128],["EP","Electrical","A",1496,1455,41],["","FGS","A",63,34,29],["","Instrument","A",318,318,0],["","Mechanical","A",504,377,127],["","Piping","A",154,118,36],["NHT","Electrical","A",101,5,96],["","FGS","A",18,0,18],["","Instrument","A",808,0,808],["","Mechanical","A",619,0,619],["","Piping","A",246,0,246],["Grand Total","","A",5228,2724,2504]];
+  // ======================
+
+  const norm = s => String(s ?? '').toLowerCase().replace(/[\s\u200c]/g, '');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = v => typeof v === 'number' ? v.toLocaleString('en-US') : (v === '' || v == null ? '—' : esc(v));
+
+  // خواندن جدول: ردیف سربرگ با ستون اول «Unit»؛ سلول‌های ادغام‌شده (Unit / Discipline) پر می‌شوند
+  function parseSheet(aoa) {
+    const h = aoa.findIndex(r => norm(r[0]) === 'unit');
+    if (h < 0) return null;
+    const head = aoa[h].slice(0, 6).map(v => String(v ?? ''));
+    const rows = [];
+    let unit = '', disc = '';
+    for (let i = h + 1; i < aoa.length; i++) {
+      const r = aoa[i];
+      if (r.slice(0, 6).every(v => v === '' || v == null)) continue;
+      const u = String(r[0] ?? '').trim(), d = String(r[1] ?? '').trim();
+      if (u) { unit = u; disc = d; } else if (d) { disc = d; }
+      rows.push({ unit, disc, code: String(r[2] ?? '').trim(), nums: [r[3], r[4], r[5]], total: norm(unit) === 'grandtotal' });
+    }
+    return { head, rows };
+  }
+
+  function span(rows, i, same) {
+    let n = 0;
+    while (i + n < rows.length && same(rows[i + n])) n++;
+    return n;
+  }
+
+  function renderTable(el, t) {
+    const { head, rows } = t;
+    let html = '<table class="tbl"><thead><tr>' + head.map(x => '<th>' + esc(x) + '</th>').join('') + '</tr></thead><tbody>';
+    rows.forEach((r, i) => {
+      const prev = rows[i - 1];
+      const newUnit = !prev || prev.unit !== r.unit;
+      html += '<tr class="' + (r.total ? 'total' : '') + '">';
+      if (newUnit) {
+        const n = span(rows, i, x => x.unit === r.unit);
+        html += r.total
+          ? '<td class="grp" colspan="2" rowspan="' + n + '">' + esc(r.unit) + '</td>'
+          : '<td class="grp" rowspan="' + n + '">' + esc(r.unit) + '</td>';
+      }
+      if (!r.total && (newUnit || prev.disc !== r.disc)) {
+        const n = span(rows, i, x => x.unit === r.unit && x.disc === r.disc);
+        html += '<td class="grp" rowspan="' + n + '">' + esc(r.disc) + '</td>';
+      }
+      html += '<td class="code">' + esc(r.code) + '</td>';
+      r.nums.forEach(v => { html += '<td class="num">' + fmt(v) + '</td>'; });
+      html += '</tr>';
+    });
+    el.innerHTML = html + '</tbody></table>';
+  }
+
+  // نمودار میله‌ای عمودی از ردیف(های) Grand Total
+  const COLORS = ['#1f3354', '#059669', '#f59e0b'];
+  function niceMax(v) {
+    if (v <= 0) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+  }
+  function renderChart(el, t) {
+    const groups = t.rows.filter(r => r.total);
+    if (!groups.length) { el.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">ردیف Grand Total پیدا نشد.</p>'; return; }
+    const names = t.head.slice(3, 6);
+    const num = v => typeof v === 'number' ? v : 0;
+    const max = niceMax(Math.max(...groups.flatMap(g => g.nums.map(num))));
+    const W = 520, H = 150, L = 44, R = 8, T = 16, B = 18, PH = H - T - B, PW = W - L - R;
+    const gw = PW / groups.length, bw = Math.min(44, gw * 0.7 / 3), gap = 4;
+    const y = v => T + PH - PH * v / max;
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="w-full h-auto" role="img" aria-label="نمودار Grand Total">';
+    for (let i = 0; i <= 4; i++) {
+      const v = max * i / 4, yy = y(v);
+      svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e8f0"/>' +
+             '<text x="' + (L - 5) + '" y="' + (yy + 3) + '" text-anchor="end" font-size="9" fill="#64748b">' + v.toLocaleString('en-US') + '</text>';
+    }
+    groups.forEach((g, gi) => {
+      const cx = L + gw * gi + gw / 2, x0 = cx - (3 * bw + 2 * gap) / 2;
+      g.nums.forEach((v, i) => {
+        const n = num(v), x = x0 + i * (bw + gap), top = y(n);
+        svg += '<rect x="' + x + '" y="' + top + '" width="' + bw + '" height="' + (T + PH - top) + '" rx="2" fill="' + COLORS[i] + '"/>' +
+               '<text x="' + (x + bw / 2) + '" y="' + (top - 3) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#14213d">' + n.toLocaleString('en-US') + '</text>';
+      });
+      const label = g.code.length <= 1 ? t.head[2] + ' ' + g.code : g.code;
+      svg += '<text x="' + cx + '" y="' + (H - 4) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#14213d">' + esc(label) + '</text>';
+    });
+    svg += '</svg>';
+    const legend = '<div class="flex justify-center gap-4 text-[11px] text-slate-600 mb-1">' +
+      names.map((n, i) => '<span class="flex items-center gap-1"><i class="inline-block w-2.5 h-2.5 rounded-sm" style="background:' + COLORS[i] + '"></i>' + esc(n) + '</span>').join('') + '</div>';
+    el.innerHTML = legend + svg;
+  }
+
+  function show(el, chartEl, t) { renderTable(el, t); renderChart(chartEl, t); }
+
+  function load(url, el, chartEl, fallback) {
+    show(el, chartEl, parseSheet(fallback));
+    return fetch(url + '?t=' + Date.now())
+      .then(res => { if (!res.ok) throw new Error(res.status); return res.arrayBuffer(); })
+      .then(buf => {
+        const wb = XLSX.read(buf, { type: 'array' });
+        for (const name of wb.SheetNames) {
+          const p = parseSheet(XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' }));
+          if (p && p.rows.length) { show(el, chartEl, p); return; }
+        }
+        throw new Error('table not found');
+      });
+  }
+
+  const statusEl = document.getElementById('dataStatus');
+  Promise.allSettled([
+    load(TASK_URL, document.getElementById('taskTable'), document.getElementById('taskChart'), TASK_FALLBACK),
+    load(PUNCH_URL, document.getElementById('punchTable'), document.getElementById('punchChart'), PUNCH_FALLBACK)
+  ]).then(([a, b]) => {
+    const failed = [];
+    if (a.status === 'rejected') failed.push('Task');
+    if (b.status === 'rejected') failed.push('Punch');
+    statusEl.textContent = failed.length
+      ? 'بارگذاری فایل اکسل ناموفق بود (' + failed.join('، ') + ')؛ آخرین داده‌های ذخیره‌شده نمایش داده می‌شود.'
+      : 'اطلاعات از فایل‌های اکسل به‌روز شد.';
+  });
+</script>
 </body>
 </html>

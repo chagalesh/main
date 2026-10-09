@@ -102,7 +102,7 @@ tailwind.config = { theme: { extend: {
     </article>
     </div>
 
-    <p id="dataStatus" class="text-xs text-slate-400 text-center">در حال به‌روزرسانی اطلاعات از فایل‌های اکسل…</p>
+    <p id="dataStatus" class="text-xs text-slate-400 text-center">در حال به‌روزرسانی اطلاعات از پایگاه داده…</p>
   </div>
 </main>
 
@@ -241,8 +241,8 @@ tailwind.config = { theme: { extend: {
     if (a.status === 'rejected') failed.push('Task');
     if (b.status === 'rejected') failed.push('Punch');
     statusEl.textContent = failed.length
-      ? 'بارگذاری فایل اکسل ناموفق بود (' + failed.join('، ') + ')؛ آخرین داده‌های ذخیره‌شده نمایش داده می‌شود.'
-      : 'اطلاعات از فایل‌های اکسل به‌روز شد.';
+      ? 'بارگذاری پایگاه داده ناموفق بود (' + failed.join('، ') + ')؛ آخرین داده‌های ذخیره‌شده نمایش داده می‌شود.'
+      : 'اطلاعات از پایگاه داده به‌روز شد.';
   });
 </script>
 </body>

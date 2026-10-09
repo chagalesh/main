@@ -101,7 +101,7 @@ tailwind.config = { theme: { extend: {
     <!-- Phases: left to right = اجرا، پیش‌راه‌اندازی، راه‌اندازی -->
     <section id="groups" dir="ltr" class="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start" aria-label="مراحل پروژه"></section>
 
-    <p id="dataStatus" class="text-[11px] text-slate-400 text-center">در حال بارگذاری اطلاعات از فایل اکسل…</p>
+    <p id="dataStatus" class="text-[11px] text-slate-400 text-center">در حال بارگذاری اطلاعات از پایگاه داده…</p>
   </div>
 </main>
 
@@ -282,9 +282,9 @@ tailwind.config = { theme: { extend: {
       renderTotal(total);
       renderGroups(groups);
       const empty = total.plan == null && total.actual == null;
-      statusEl.textContent = empty ? 'فایل اکسل بارگذاری شد ولی هنوز درصدی در ستون‌های B و C ثبت نشده است.' : 'اطلاعات از فایل اکسل به‌روز شد.';
+      statusEl.textContent = empty ? 'پایگاه داده بارگذاری شد ولی هنوز درصدی در ستون‌های B و C ثبت نشده است.' : 'اطلاعات از پایگاه داده به‌روز شد.';
     })
-    .catch(() => { statusEl.textContent = 'بارگذاری فایل اکسل ناموفق بود. اتصال اینترنت و آدرس فایل (progress.xlsx) را بررسی کنید.'; });
+    .catch(() => { statusEl.textContent = 'بارگذاری پایگاه داده ناموفق بود. اتصال اینترنت و آدرس فایل (progress.xlsx) را بررسی کنید.'; });
 </script>
 </body>
 </html>

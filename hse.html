@@ -94,7 +94,7 @@ tailwind.config = { theme: { extend: {
       </div>
     </article>
 
-    <p id="dataStatus" class="text-xs text-slate-400 text-center pt-2">در حال بارگذاری اطلاعات از فایل اکسل…</p>
+    <p id="dataStatus" class="text-xs text-slate-400 text-center pt-2">در حال بارگذاری اطلاعات از پایگاه داده…</p>
   </div>
 </main>
 
@@ -178,10 +178,10 @@ tailwind.config = { theme: { extend: {
       render(data);
       const missing = Object.keys(LABELS).filter(k => !(k in data));
       statusEl.textContent = missing.length
-        ? 'اطلاعات بارگذاری شد؛ این عنوان‌ها در اکسل پیدا نشد: ' + missing.map(k => LABELS[k]).join('، ')
-        : 'اطلاعات از فایل اکسل به‌روز شد.';
+        ? 'اطلاعات بارگذاری شد؛ این عنوان‌ها در پایگاه داده پیدا نشد: ' + missing.map(k => LABELS[k]).join('، ')
+        : 'اطلاعات از پایگاه داده به‌روز شد.';
     })
-    .catch(() => { statusEl.textContent = 'بارگذاری فایل اکسل ناموفق بود. اتصال اینترنت و آدرس فایل را بررسی کنید.'; });
+    .catch(() => { statusEl.textContent = 'بارگذاری پایگاه داده ناموفق بود. اتصال اینترنت و آدرس فایل را بررسی کنید.'; });
 </script>
 </body>
 </html>
